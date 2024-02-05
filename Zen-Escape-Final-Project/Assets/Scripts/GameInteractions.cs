@@ -2,12 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class GameInteractions : MonoBehaviour
 {
     public GameObject roomView;
     public GameObject doorView;
     public GameObject inventorySlots;
+    public GameObject splashHint;
     public GameObject padlockBtns;
     public Text padlockPw;
     public SpriteRenderer door;
@@ -18,12 +21,13 @@ public class GameInteractions : MonoBehaviour
     GameObject activeItem;
     int pwCount = 0;
     int correctPw = 427;
+    int splashHintCount = 0;
     bool canEscape = false;
 
     // Start is called before the first frame update
     void Start()
     {
-
+        Time.timeScale = 1;
     }
 
     // Update is called once per frame
@@ -32,7 +36,8 @@ public class GameInteractions : MonoBehaviour
         Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
-        if (Input.GetMouseButtonDown(0) && hit.collider != null)
+        // mouse click + collision + no UI element
+        if (Input.GetMouseButtonDown(0) && hit.collider != null && !EventSystem.current.IsPointerOverGameObject())
         {
             Debug.Log(hit.collider);
             interacted = hit.collider.gameObject;
@@ -87,7 +92,7 @@ public class GameInteractions : MonoBehaviour
         }
 
         // active item follow mouse
-        if (activeItem != null)
+        if (activeItem != null && Time.timeScale != 0)
         {
             activeItem.transform.position = mousePos;
         }
@@ -105,6 +110,7 @@ public class GameInteractions : MonoBehaviour
             else
             {
                 successUI.SetActive(true);
+                Time.timeScale = 0;
             }
         }
 
@@ -117,15 +123,27 @@ public class GameInteractions : MonoBehaviour
 
     void ItemUse()
     {
-        if (activeItem != null && activeItem.name.Contains("Towels") && (interacted.name == "Splash1" || interacted.name == "Splash2" || interacted.name == "Splash3"))
+        if (interacted.name == "Splash1" || interacted.name == "Splash2" || interacted.name == "Splash3")
         {
-            Destroy(interacted);
+            if (activeItem != null && activeItem.name.Contains("Towels"))
+            {
+                Destroy(interacted);
+            }
+            else
+            {
+                splashHintCount++;
+                Debug.Log("Hint Count: " + splashHintCount);
+                if (splashHintCount > 2)
+                {
+                    StartCoroutine(HintDisplay(splashHint));
+                }
+            }
         }
     }
 
     void InputCode()
     {
-        if (interacted.transform.IsChildOf(padlockBtns.transform) && pwCount < 4)
+        if (interacted.transform.IsChildOf(padlockBtns.transform) && pwCount < 3)
         {
             int numPressed = interacted.transform.GetSiblingIndex() + 1;
             padlockPw.text += numPressed;
@@ -168,5 +186,18 @@ public class GameInteractions : MonoBehaviour
         pwCount = 0;
         padlockPw.color = Color.black;
 
+    }
+
+    IEnumerator HintDisplay(GameObject hint)
+    {
+        hint.SetActive(true);
+        yield return new WaitForSeconds(1);
+        hint.SetActive(false);
+
+    }
+
+    public void RestartGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
