@@ -8,54 +8,30 @@ using TMPro;
 
 public class Room2 : MonoBehaviour
 {
-    public GameObject roomView;
-    public GameObject doorView;
-    public GameObject shelfView;
-    public GameObject safefView;
-    public GameObject paintingView;
-    public GameObject bedView;
-    public GameObject tableView;
     GameObject currentView;
 
     public GameObject inventorySlots;
 
     public GameObject splashHint;
 
-    public GameObject roomBulb;
-    public GameObject roomHammer;
-
-    public GameObject clueNote;
+    public Sprite clueNoteSprite;
     public GameObject clueUI;
     public GameObject notebookUI;
 
-    public GameObject padlockBtns;
     public TMP_Text padlockPw;
 
-    public SpriteRenderer safe;
-    public Sprite safeOpen;
-    public GameObject keyItem;
-    public GameObject shelfViewClose;
-    public GameObject shelfViewOpen;
-
-    public SpriteRenderer shelf;
-    public Sprite shelfOpen;
-
-    public SpriteRenderer paintView;
-    public Sprite paintViewWhite;
-    public Sprite paintViewPurple;
-    public SpriteRenderer bulb;
-    public Sprite bulbWhite;
-    public Sprite bulbPurple;
-    public SpriteRenderer painting;
-    public Sprite paintingWhite;
-    public Sprite paintingPurple;
+    public Sprite safeOpenSprite;
+    public Sprite keySprite;
+    public Sprite paintingLightWhiteSprite;
+    public Sprite paintingLightPurpleSprite;
+    public Sprite paintingWhiteSprite;
+    public Sprite paintingPurpleSprite;
 
     public SpriteRenderer invBulb;
-    public Sprite itemBulbWhite;
-    public Sprite itemBulbPurple;
+    public Sprite itemBulbWhiteSprite;
+    public Sprite itemBulbPurpleSprite;
 
-    public SpriteRenderer door;
-    public Sprite doorOpen;
+    public Sprite doorOpenSprite;
     public GameObject successUI;
 
     GameObject interacted;
@@ -65,23 +41,67 @@ public class Room2 : MonoBehaviour
     //int splashHintCount = 0;
     bool canEscape = false;
 
+    public Camera cam2;
+
+    Vector3 zoomPos;
+    Vector3 zoomPosSpeed = Vector3.zero;
+    float zoomScale;
+    float zoomSpeed;
+    float zoomTime = 0.5f;
+
+    float roomScale;
+    Vector3 roomPos;
+    //bool backtoroom = false;
+
+    bool isZooming = false;
+    RaycastHit2D hit;
+    Vector2 mousePos;
+    //Vector2 testPos;
+
     // Start is called before the first frame update
     void Start()
     {
         Time.timeScale = 1;
-        currentView = roomView;
+
+        roomScale = cam2.orthographicSize;
+        roomPos = cam2.transform.position;
+        zoomScale = roomScale;
+        zoomPos = roomPos;
     }
 
     // Update is called once per frame
     void Update()
     {
-        Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero);
+        mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        // mouse click + collision + no UI element
-        if (Input.GetMouseButtonDown(0) && hit.collider != null && !EventSystem.current.IsPointerOverGameObject())
+        if (Camera.main.ScreenToViewportPoint(Input.mousePosition).x > 0.85f)
         {
+            mousePos = new Vector2(mousePos.x, mousePos.y);
+        }
+        else if (cam2.orthographicSize == roomScale)
+        {
+            mousePos = new Vector2(mousePos.x, mousePos.y - 12);
+        }
+        else
+        {
+            float xOff = roomPos.x - zoomPos.x - 0.04f;
+            float yOff = roomPos.y - zoomPos.y;
+            float scaleOff = zoomScale / roomScale;
+            mousePos = new Vector2(mousePos.x * scaleOff - xOff, mousePos.y * scaleOff - 12 - yOff);
+        }
+
+        hit = Physics2D.Raycast(mousePos, Vector2.zero);
+
+        // mouse click + collision + no UI element  && !EventSystem.current.IsPointerOverGameObject()
+        if (Input.GetMouseButtonDown(0) && hit.collider != null)
+        {
+            //Debug.Log(mousePos);
             Debug.Log(hit.collider);
+
+            //Vector2 testPos = cam2.ScreenToWorldPoint(Input.mousePosition);
+            //GameObject idk = Instantiate(roomBulb, mousePos, Quaternion.identity);
+            //idk.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+
             interacted = hit.collider.gameObject;
 
             // put game items into inventory
@@ -93,19 +113,10 @@ public class Room2 : MonoBehaviour
                     {
                         interacted.transform.position = child.position;
                         interacted.transform.parent = child.transform;
-                        interacted.transform.localScale = new Vector2(0.4f, 0.4f);
+                        interacted.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
                         interacted.GetComponent<BoxCollider2D>().enabled = false;
                         break;
                     }
-                }
-
-                if (interacted.name == "Bulb")
-                {
-                    Destroy(roomBulb);
-                }
-                else if (interacted.name == "Hammer")
-                {
-                    Destroy(roomHammer);
                 }
             }
 
@@ -117,11 +128,6 @@ public class Room2 : MonoBehaviour
                 {
                     activeItem = Instantiate(interacted.transform.GetChild(0).gameObject, mousePos, Quaternion.identity); //need change to ui? (in front of everything)
                     activeItem.transform.localScale = new Vector3(activeItem.transform.localScale.x * 2/3, activeItem.transform.localScale.y * 2 / 3, activeItem.transform.localScale.z * 2 / 3);
-
-                    if (activeItem.name.Contains("Bulb"))
-                    {
-                        invBulb = interacted.transform.GetChild(0).GetComponent<SpriteRenderer>();
-                    }
                 }
                 else
                 {
@@ -140,6 +146,11 @@ public class Room2 : MonoBehaviour
                     }
                 }
 
+                if (activeItem.name.Contains("Bulb"))
+                {
+                    invBulb = interacted.transform.GetChild(0).GetComponent<SpriteRenderer>();
+                }
+
                 activeItem.GetComponent<SpriteRenderer>().sortingOrder = 15;
             }
 
@@ -147,17 +158,11 @@ public class Room2 : MonoBehaviour
 
             ItemUse();
 
-            InputCode();
-        }
+            if (padlockPw != null && padlockPw.gameObject.activeInHierarchy)
+            {
+                InputCode();
+            }
 
-        // active item follow mouse
-        if (activeItem != null && Time.timeScale != 0)
-        {
-            activeItem.transform.position = mousePos;
-        }
-
-        if (Input.GetMouseButtonDown(0) && hit.collider != null)
-        {
             if (interacted.name == "Notes")
             {
                 notebookUI.SetActive(true);
@@ -168,63 +173,156 @@ public class Room2 : MonoBehaviour
                 clueUI.SetActive(true);
             }
         }
+
+        // active item follow mouse
+        if (activeItem != null && Time.timeScale != 0)
+        {
+            activeItem.transform.position = mousePos;
+
+            float itemScale = 0.4f * 2/3;
+
+            if (Camera.main.ScreenToViewportPoint(Input.mousePosition).x > 0.85f)
+            {
+                activeItem.transform.localScale = new Vector2(itemScale, itemScale);
+            }
+            else if (activeItem.transform.localScale.x != itemScale * (zoomScale / roomScale))
+            {
+                activeItem.transform.localScale = new Vector2(itemScale * (zoomScale / roomScale), itemScale * (zoomScale / roomScale));
+            }
+        }
+
+    }
+
+    private void LateUpdate()
+    {
+        Zooming();
+
+    }
+
+    public void ZoomBack()
+    {
+        if (currentView.name == "Safe")
+        {
+            zoomScale = 1.9f;
+            zoomPos = new Vector3(-1.25f, -9.75f, cam2.transform.position.z);
+        }
+        else
+        {
+            zoomPos = roomPos;
+            zoomScale = roomScale;
+        }
+
+        isZooming = true;
+
+        //currentView.GetComponents<BoxCollider2D>().enabled = true;
+        foreach (BoxCollider2D col in currentView.GetComponents<BoxCollider2D>())
+        {
+            col.enabled = true;
+        }
+        foreach (Transform c in currentView.transform)
+        {
+            if (c.gameObject.GetComponent<BoxCollider2D>() != null)
+            {
+                c.gameObject.GetComponent<BoxCollider2D>().enabled = false;
+            }
+        }
+
+        if (currentView.name == "Safe")
+        {
+            currentView = currentView.transform.parent.gameObject;
+            if (padlockPw != null)
+            {
+                padlockPw.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    void Zooming()
+    {
+        if (isZooming)
+        {
+            //Vector3 doorSpeed = Vector3.zero;
+            Vector3 smoothPos = Vector3.SmoothDamp(cam2.transform.position, zoomPos, ref zoomPosSpeed, zoomTime);
+            float smoothOrtho = Mathf.SmoothDamp(cam2.orthographicSize, zoomScale, ref zoomSpeed, zoomTime);
+
+            cam2.transform.position = smoothPos;
+            cam2.orthographicSize = smoothOrtho;
+
+            if (Vector3.Distance(cam2.transform.position, zoomPos) < 0.01f && Mathf.Abs(cam2.orthographicSize - zoomScale) < 0.01f)
+            {
+                cam2.transform.position = zoomPos;
+                cam2.orthographicSize = zoomScale;
+                if (currentView.name == "Safe")
+                {
+                    if (padlockPw != null)
+                    {
+                        padlockPw.gameObject.SetActive(true);
+                    }
+                }
+                isZooming = false;
+                Debug.Log("done");
+            }
+        }
     }
 
     void ViewChange()
     {
-        currentView.SetActive(false);
+        if (!isZooming && interacted.tag == "Zoom")
+        {
+            if (interacted.name == "Door")
+            {
+                if (canEscape == false)
+                {
+                    zoomScale = 0.8f;
+                    zoomPos = new Vector3(-5.28f, -9.4f, cam2.transform.position.z);
 
-        if (interacted.name == "Door")
-        {
-            if (canEscape == true)
-            {
-                successUI.SetActive(true);
-                Time.timeScale = 0;
+                    currentView = interacted;
+                }
+                else
+                {
+                    successUI.SetActive(true);
+                }
             }
-            else
+            else if (interacted.name == "Shelf")
             {
-                currentView = doorView;
+                zoomScale = 1.9f;
+                zoomPos = new Vector3(-1.25f, -9.75f, cam2.transform.position.z);
             }
-        }
-        else if (interacted.name == "Shelf")
-        {
-            currentView = shelfView;
-        }
-        else if (interacted.name.Contains("Safe"))
-        {
-            currentView = safefView;
-        }
-        else if (interacted.name == "Painting")
-        {
-            currentView = paintingView;
-        }
-        else if (interacted.name == "Table" || interacted.name == "Chair")
-        {
-            currentView = tableView;
-        }
-        else if (interacted.name == "Bed" || interacted.name == "Piggy")
-        {
-            currentView = bedView;
-        }
-
-        if (interacted.name == "BackBtn")
-        {
-            currentView.SetActive(false);
-
-            if (currentView == safefView)
+            else if (interacted.name == "Painting")
             {
-                currentView = shelfView;
+                zoomScale = 1.8f;
+                zoomPos = new Vector3(4.21f, -9.38f, cam2.transform.position.z);
             }
-            else
+            else if (interacted.name == "Table")
             {
-                currentView = roomView;
+                zoomScale = 2.2f;
+                zoomPos = new Vector3(-2.65f, -14.3f, cam2.transform.position.z);
+            }
+            else if (interacted.name == "Bed")
+            {
+                zoomScale = 2.36f;
+                zoomPos = new Vector3(4.35f, -13.6f, cam2.transform.position.z);
+            }
+            if (interacted.name == "Safe")
+            {
+                zoomScale = 0.52f;
+                zoomPos = new Vector3(-0.76f, -11.05f, cam2.transform.position.z);
             }
 
-            currentView.SetActive(true);
-        }
-        else
-        {
-            currentView.SetActive(true);
+            isZooming = true;
+
+            currentView = interacted;
+            foreach (BoxCollider2D col in currentView.GetComponents<BoxCollider2D>())
+            {
+                col.enabled = false;
+            }
+            foreach (Transform c in currentView.transform)
+            {
+                if (c.gameObject.GetComponent<BoxCollider2D>() != null)
+                {
+                    c.gameObject.GetComponent<BoxCollider2D>().enabled = true;
+                }
+            }
         }
     }
 
@@ -234,7 +332,18 @@ public class Room2 : MonoBehaviour
         {
             if (activeItem != null && activeItem.name.Contains("Hammer"))
             {
-                clueNote.SetActive(true);
+                // instantiate clue note
+                GameObject clueNoteItem = new GameObject();
+                clueNoteItem.name = "ClueNote";
+                //clueNoteItem.tag = "Item";
+                clueNoteItem.transform.SetParent(currentView.transform);
+                clueNoteItem.transform.localPosition = interacted.transform.localPosition;
+                clueNoteItem.transform.localScale = new Vector3(0.1f, 0.1f);
+                SpriteRenderer keyRenderer = clueNoteItem.AddComponent<SpriteRenderer>();
+                keyRenderer.sprite = clueNoteSprite;
+                keyRenderer.sortingOrder = 2;
+                clueNoteItem.AddComponent<BoxCollider2D>();
+
                 Destroy(interacted);
             }
             //else
@@ -252,27 +361,24 @@ public class Room2 : MonoBehaviour
             if (activeItem != null && activeItem.name.Contains("Bulb"))
             {
                 //Destroy(interacted);
-                if (bulb.sprite == bulbWhite)
+                SpriteRenderer paintingLight = interacted.GetComponent<SpriteRenderer>();
+                SpriteRenderer painting = interacted.transform.parent.GetComponent<SpriteRenderer>();
+
+                if (paintingLight.sprite == paintingLightWhiteSprite)
                 {
-                    bulb.sprite = bulbPurple;
-                    painting.sprite = paintingPurple;
+                    paintingLight.sprite = paintingLightPurpleSprite;
+                    painting.sprite = paintingPurpleSprite;
 
-                    paintView.sprite = paintViewPurple;
-                    paintView.gameObject.transform.localScale = new Vector2(2.22f, 2.215f);
-
-                    invBulb.sprite = itemBulbWhite;
-                    activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbWhite;
+                    invBulb.sprite = itemBulbWhiteSprite;
+                    activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbWhiteSprite;
                 }
-                else if (bulb.sprite == bulbPurple)
+                else if (paintingLight.sprite == paintingLightPurpleSprite)
                 {
-                    bulb.sprite = bulbWhite;
-                    painting.sprite = paintingWhite;
+                    paintingLight.sprite = paintingLightWhiteSprite;
+                    painting.sprite = paintingWhiteSprite;
 
-                    paintView.sprite = paintViewWhite;
-                    paintView.gameObject.transform.localScale = new Vector2(2.35f, 2.34f);
-
-                    invBulb.sprite = itemBulbPurple;
-                    activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbPurple;
+                    invBulb.sprite = itemBulbPurpleSprite;
+                    activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbPurpleSprite;
                 }
             }
             //else
@@ -306,8 +412,10 @@ public class Room2 : MonoBehaviour
 
     void InputCode()
     {
-        if (interacted.transform.IsChildOf(padlockBtns.transform) && pwCount < 3)
+        if (pwCount < 3)
         {
+            //Debug.Log("press");
+            //Debug.Log(interacted);
             int numPressed = interacted.transform.GetSiblingIndex() + 1;
             padlockPw.text += numPressed;
 
@@ -335,28 +443,32 @@ public class Room2 : MonoBehaviour
     {
         padlockPw.color = Color.green;
         yield return new WaitForSeconds(1);
-        padlockBtns.SetActive(false);
-        padlockPw.gameObject.SetActive(false);
-        safe.sprite = safeOpen;
-        safe.gameObject.transform.localScale = new Vector2(2.3f, 2.175f);
-        keyItem.SetActive(true);
-        shelf.sprite = shelfOpen;
-        shelfViewClose.SetActive(false);
-        shelfViewOpen.SetActive(true);
-        //door.sprite = doorOpen;
-        //roomView.SetActive(true);
-        //doorView.SetActive(false);
+        foreach (Transform b in currentView.transform)
+        {
+            Destroy(b.gameObject);
+        }
+        Destroy(padlockPw.gameObject);
+        currentView.GetComponent<SpriteRenderer>().sprite = safeOpenSprite;
 
+        // instantiate key
+        GameObject keyItem = new GameObject();
+        keyItem.name = "Key";
+        keyItem.tag = "Item";
+        keyItem.transform.SetParent(currentView.transform);
+        keyItem.transform.localPosition = new Vector3(1.015f, 0, 0);
+        keyItem.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+        SpriteRenderer keyRenderer = keyItem.AddComponent<SpriteRenderer>();
+        keyRenderer.sprite = keySprite;
+        keyRenderer.sortingOrder = 3;
+        keyItem.AddComponent<BoxCollider2D>();
 
+        currentView.transform.localPosition = new Vector3(currentView.transform.localPosition.x - 1.015f, currentView.transform.localPosition.y, currentView.transform.localPosition.z);
     }
     IEnumerator KeySuccess()
     {
-        //padlockPw.color = Color.green;
+        ZoomBack();
         yield return new WaitForSeconds(1);
-        door.sprite = doorOpen;
-        roomView.SetActive(true);
-        doorView.SetActive(false);
-        currentView = roomView;
+        currentView.GetComponent<SpriteRenderer>().sprite = doorOpenSprite;
 
     }
 
