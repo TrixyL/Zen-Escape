@@ -58,9 +58,13 @@ public class Room2 : MonoBehaviour
     Vector2 mousePos;
     //Vector2 testPos;
 
+    AudioManager am;
+
     // Start is called before the first frame update
     void Start()
     {
+        am = AudioManager.instance;
+
         Time.timeScale = 1;
 
         roomScale = cam2.orthographicSize;
@@ -93,7 +97,7 @@ public class Room2 : MonoBehaviour
         hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
         // mouse click + collision + no UI element  && !EventSystem.current.IsPointerOverGameObject()
-        if (Input.GetMouseButtonDown(0) && hit.collider != null)
+        if (Input.GetMouseButtonDown(0) && hit.collider != null && Time.timeScale == 1)
         {
             //Debug.Log(mousePos);
             Debug.Log(hit.collider);
@@ -104,9 +108,16 @@ public class Room2 : MonoBehaviour
 
             interacted = hit.collider.gameObject;
 
+            if (interacted.tag == "Untagged" || interacted.tag == "Zoom")
+            {
+                am.PlaySFX(am.sfxClick);
+            }
+
             // put game items into inventory
             if (interacted.tag == "Item")
             {
+                am.PlaySFX(am.sfxCollect);
+
                 foreach (Transform child in inventorySlots.transform)
                 {
                     if (child.childCount < 1)
@@ -115,6 +126,7 @@ public class Room2 : MonoBehaviour
                         interacted.transform.parent = child.transform;
                         interacted.transform.localScale = new Vector3(0.4f, 0.4f, 0.4f);
                         interacted.GetComponent<BoxCollider2D>().enabled = false;
+                        child.tag = "Inventory";
                         break;
                     }
                 }
@@ -123,11 +135,13 @@ public class Room2 : MonoBehaviour
             // (un)select item in inventory
             if (interacted.tag == "Inventory" && interacted.transform.childCount > 0)
             {
+                am.PlaySFX(am.sfxCollect);
+
                 // select
                 if (!activeItem)
                 {
                     activeItem = Instantiate(interacted.transform.GetChild(0).gameObject, mousePos, Quaternion.identity); //need change to ui? (in front of everything)
-                    activeItem.transform.localScale = new Vector3(activeItem.transform.localScale.x * 2/3, activeItem.transform.localScale.y * 2 / 3, activeItem.transform.localScale.z * 2 / 3);
+                    activeItem.transform.localScale = new Vector3(activeItem.transform.localScale.x * 2 / 3, activeItem.transform.localScale.y * 2 / 3, activeItem.transform.localScale.z * 2 / 3);
                 }
                 else
                 {
@@ -171,15 +185,26 @@ public class Room2 : MonoBehaviour
             if (interacted.name == "ClueNote")
             {
                 clueUI.SetActive(true);
+
+                am.PlaySFX(am.sfxPaper);
             }
+        }
+        else if (Input.GetMouseButtonDown(0))
+        {
+            am.PlaySFX(am.sfxClick);
+        }
+
+        if (notebookUI.activeInHierarchy || clueUI.activeInHierarchy)
+        {
+            Time.timeScale = 0;
         }
 
         // active item follow mouse
-        if (activeItem != null && Time.timeScale != 0)
+        if (activeItem != null && Time.timeScale != 0) // && mousePos.x > -7
         {
             activeItem.transform.position = mousePos;
 
-            float itemScale = 0.4f * 2/3;
+            float itemScale = 0.4f * 2 / 3;
 
             if (Camera.main.ScreenToViewportPoint(Input.mousePosition).x > 0.85f)
             {
@@ -280,7 +305,10 @@ public class Room2 : MonoBehaviour
                 }
                 else
                 {
+                    am.PlaySFX(am.sfxEscapeSuccess);
+
                     successUI.SetActive(true);
+                    Time.timeScale = 0;
                 }
             }
             else if (interacted.name == "Shelf")
@@ -335,7 +363,7 @@ public class Room2 : MonoBehaviour
                 // instantiate clue note
                 GameObject clueNoteItem = new GameObject();
                 clueNoteItem.name = "ClueNote";
-                //clueNoteItem.tag = "Item";
+                clueNoteItem.tag = "Interactive";
                 clueNoteItem.transform.SetParent(currentView.transform);
                 clueNoteItem.transform.localPosition = interacted.transform.localPosition;
                 clueNoteItem.transform.localScale = new Vector3(0.1f, 0.1f);
@@ -345,6 +373,11 @@ public class Room2 : MonoBehaviour
                 clueNoteItem.AddComponent<BoxCollider2D>();
 
                 Destroy(interacted);
+                am.PlaySFX(am.sfxCeramicBreak);
+            }
+            else
+            {
+                am.PlaySFX(am.sfxClick);
             }
             //else
             //{
@@ -360,6 +393,8 @@ public class Room2 : MonoBehaviour
         {
             if (activeItem != null && activeItem.name.Contains("Bulb"))
             {
+                am.PlaySFX(am.sfxChangeBulb);
+
                 //Destroy(interacted);
                 SpriteRenderer paintingLight = interacted.GetComponent<SpriteRenderer>();
                 SpriteRenderer painting = interacted.transform.parent.GetComponent<SpriteRenderer>();
@@ -381,6 +416,10 @@ public class Room2 : MonoBehaviour
                     activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbPurpleSprite;
                 }
             }
+            else
+            {
+                am.PlaySFX(am.sfxClick);
+            }
             //else
             //{
             //    splashHintCount++;
@@ -398,6 +437,10 @@ public class Room2 : MonoBehaviour
                 canEscape = true;
                 StartCoroutine(KeySuccess());
             }
+            else
+            {
+                am.PlaySFX(am.sfxDoorLocked);
+            }
             //else
             //{
             //    splashHintCount++;
@@ -414,6 +457,8 @@ public class Room2 : MonoBehaviour
     {
         if (pwCount < 3)
         {
+            am.PlaySFX(am.sfxBeep);
+
             //Debug.Log("press");
             //Debug.Log(interacted);
             int numPressed = interacted.transform.GetSiblingIndex() + 1;
@@ -442,6 +487,8 @@ public class Room2 : MonoBehaviour
     IEnumerator SafeSuccess()
     {
         padlockPw.color = Color.green;
+        yield return new WaitForSeconds(0.4f);
+        am.PlaySFX(am.sfxSafeUnlock);
         yield return new WaitForSeconds(1);
         foreach (Transform b in currentView.transform)
         {
@@ -466,6 +513,7 @@ public class Room2 : MonoBehaviour
     }
     IEnumerator KeySuccess()
     {
+        am.PlaySFX(am.sfxDoorUnlock);
         ZoomBack();
         yield return new WaitForSeconds(1);
         currentView.GetComponent<SpriteRenderer>().sprite = doorOpenSprite;
@@ -497,5 +545,6 @@ public class Room2 : MonoBehaviour
     public void GoBack()
     {
         EventSystem.current.currentSelectedGameObject.transform.parent.gameObject.SetActive(false);
+        Time.timeScale = 1;
     }
 }

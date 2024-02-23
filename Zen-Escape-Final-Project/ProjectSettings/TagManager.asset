@@ -7,6 +7,8 @@ TagManager:
   - Item
   - Inventory
   - Zoom
+  - Audio
+  - Interactive
   layers:
   - Default
   - TransparentFX
