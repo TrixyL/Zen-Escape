@@ -9,6 +9,7 @@ TagManager:
   - Zoom
   - Audio
   - Interactive
+  - Animator
   layers:
   - Default
   - TransparentFX

@@ -126,9 +126,4 @@ public class AudioManager : MonoBehaviour
         audioSettingsUI.SetActive(false);
         Time.timeScale = 1;
     }
-    public void OpenSettings()
-    {
-        audioSettingsUI.SetActive(true);
-        Time.timeScale = 0;
-    }
 }

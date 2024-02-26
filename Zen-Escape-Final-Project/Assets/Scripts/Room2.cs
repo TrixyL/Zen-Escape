@@ -194,7 +194,7 @@ public class Room2 : MonoBehaviour
             am.PlaySFX(am.sfxClick);
         }
 
-        if (notebookUI.activeInHierarchy || clueUI.activeInHierarchy)
+        if (notebookUI.activeInHierarchy || clueUI.activeInHierarchy || successUI.activeInHierarchy)
         {
             Time.timeScale = 0;
         }
@@ -538,10 +538,6 @@ public class Room2 : MonoBehaviour
 
     }
 
-    public void RestartGame()
-    {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-    }
     public void GoBack()
     {
         EventSystem.current.currentSelectedGameObject.transform.parent.gameObject.SetActive(false);
