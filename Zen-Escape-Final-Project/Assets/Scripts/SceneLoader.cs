@@ -13,6 +13,7 @@ public class SceneLoader : MonoBehaviour
 
     public GameObject creditsUI;
     public GameObject helpUI;
+    public Animator hintsUI;
 
     //bool isFrom = false;
 
@@ -147,6 +148,18 @@ public class SceneLoader : MonoBehaviour
     public void HideHelp()
     {
         helpUI.SetActive(false);
+        Time.timeScale = 1;
+    }
+
+    public void OpenHints()
+    {
+        hintsUI.SetTrigger("toggle");
+        //Time.timeScale = 0;
+    }
+
+    public void CloseHints()
+    {
+        hintsUI.SetTrigger("toggle");
         Time.timeScale = 1;
     }
 }

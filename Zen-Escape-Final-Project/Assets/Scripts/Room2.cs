@@ -41,6 +41,17 @@ public class Room2 : MonoBehaviour
     //int splashHintCount = 0;
     bool canEscape = false;
 
+    Dictionary<string, int> hintsCount = new Dictionary<string, int>();
+    public GameObject hintsPos;
+    public GameObject hintPrefab;
+    List<string> hintsList = new List<string>();
+
+    public Sprite piggySprite;
+    public Sprite paintingSprite;
+    public Sprite doorSprite;
+    public Sprite safeSprite;
+
+
     public Camera cam2;
 
     Vector3 zoomPos;
@@ -354,6 +365,64 @@ public class Room2 : MonoBehaviour
         }
     }
 
+    void AddHint(string hintName, Sprite hintSprite, string hintMessage)
+    {
+        if (!hintsCount.ContainsKey(hintName))
+        {
+            hintsCount[hintName] = 1;
+        }
+        else if (hintsCount[hintName] < 2)
+        {
+            hintsCount[hintName] += 1;
+        }
+        else
+        {
+            hintsCount[hintName] += 1;
+
+            // add hint to panel on third attempt
+            if (hintsCount[hintName] == 3)
+            {
+                //AddHint("Piggy Hint", hintPiggy, "There seems to be something inside");
+                GameObject newHint;
+
+                newHint = Instantiate(hintPrefab, hintsPos.transform.position, Quaternion.identity, hintsPos.transform);
+
+                newHint.name = hintName;
+                Image hintImage = newHint.transform.GetChild(1).GetComponentInChildren<Image>();
+                hintImage.sprite = hintSprite;
+                hintImage.SetNativeSize();
+                newHint.transform.GetComponentInChildren<TMP_Text>().text = hintMessage;
+
+                hintsList.Add(hintName);
+            }
+        }
+
+
+        
+    }
+
+    void DestroyHint(string hintName)
+    {
+        // if on hints panel
+        if (hintsList.Contains(hintName))
+        {
+            int oldHint = hintsPos.transform.Find(hintName).GetSiblingIndex();
+
+            // update positions of other hints
+            if (hintsPos.transform.childCount > 1)
+            {
+                for (int i = hintsPos.transform.childCount - 1; i > oldHint; i--)
+                {
+                    //Vector3 newPos = hintsPos.transform.GetChild(i).position;
+                    hintsPos.transform.GetChild(i).position = hintsPos.transform.GetChild(i-1).position;
+                }
+            }
+
+            hintsList.Remove(hintName);
+            Destroy(hintsPos.transform.GetChild(oldHint).gameObject);
+        }
+    }
+
     void ItemUse()
     {
         if (interacted.name == "Piggy")
@@ -372,12 +441,16 @@ public class Room2 : MonoBehaviour
                 keyRenderer.sortingOrder = 2;
                 clueNoteItem.AddComponent<BoxCollider2D>();
 
+                DestroyHint("Piggy Hint");
+
                 Destroy(interacted);
                 am.PlaySFX(am.sfxCeramicBreak);
             }
             else
             {
                 am.PlaySFX(am.sfxClick);
+
+                AddHint("Piggy Hint", piggySprite, "There seems to be something inside");
             }
             //else
             //{
@@ -393,6 +466,13 @@ public class Room2 : MonoBehaviour
         {
             if (activeItem != null && activeItem.name.Contains("Bulb"))
             {
+                if (!hintsCount.ContainsKey("Painting Hint"))
+                {
+                    hintsCount["Painting Hint"] = 4;
+                }
+
+                DestroyHint("Painting Hint");
+
                 am.PlaySFX(am.sfxChangeBulb);
 
                 //Destroy(interacted);
@@ -419,6 +499,8 @@ public class Room2 : MonoBehaviour
             else
             {
                 am.PlaySFX(am.sfxClick);
+
+                AddHint("Painting Hint", paintingSprite, "It seems to be able to change");
             }
             //else
             //{
@@ -435,11 +517,14 @@ public class Room2 : MonoBehaviour
             if (activeItem != null && activeItem.name.Contains("Key"))
             {
                 canEscape = true;
+                DestroyHint("Door Hint");
                 StartCoroutine(KeySuccess());
             }
             else
             {
                 am.PlaySFX(am.sfxDoorLocked);
+
+                AddHint("Door Hint", doorSprite, "It seems to be locked");
             }
             //else
             //{
@@ -472,12 +557,16 @@ public class Room2 : MonoBehaviour
                 {
                     Debug.Log("success!");
                     //canEscape = true;
+                    DestroyHint("Safe Hint");
+
                     StartCoroutine(SafeSuccess());
                 }
                 else
                 {
                     Debug.Log("failed...");
                     StartCoroutine(ShortDisplay());
+
+                    AddHint("Safe Hint", safeSprite, "There may be clues around the room about the code");
 
                 }
             }
