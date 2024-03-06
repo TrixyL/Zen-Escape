@@ -12,6 +12,26 @@ public class Room2 : MonoBehaviour
 
     public GameObject inventorySlots;
 
+    public GameObject booksPos;
+    public Sprite bookRed1;
+    public Sprite bookRed2;
+    public Sprite bookRed3;
+    public Sprite bookGreen1;
+    public Sprite bookGreen2;
+    public Sprite bookGreen3;
+    public Sprite bookBlue1;
+    public Sprite bookBlue2;
+    public Sprite bookBlue3;
+
+    public GameObject plantsPos;
+    public GameObject testPlant;
+
+
+    public GameObject planetsPos;
+
+    public GameObject keyPrefab;
+    public GameObject clueNotePrefab;
+
     public GameObject splashHint;
 
     public Sprite clueNoteSprite;
@@ -24,8 +44,8 @@ public class Room2 : MonoBehaviour
     public Sprite keySprite;
     public Sprite paintingLightWhiteSprite;
     public Sprite paintingLightPurpleSprite;
-    public Sprite paintingWhiteSprite;
-    public Sprite paintingPurpleSprite;
+    //public Sprite paintingWhiteSprite;
+    //public Sprite paintingPurpleSprite;
 
     public SpriteRenderer invBulb;
     public Sprite itemBulbWhiteSprite;
@@ -37,7 +57,7 @@ public class Room2 : MonoBehaviour
     GameObject interacted;
     GameObject activeItem;
     int pwCount = 0;
-    int correctPw = 835;
+    string correctPw;
     //int splashHintCount = 0;
     bool canEscape = false;
 
@@ -74,6 +94,10 @@ public class Room2 : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        BookPass();
+        PlantPass();
+        PaintingPass();
+
         am = AudioManager.instance;
 
         Time.timeScale = 1;
@@ -227,6 +251,139 @@ public class Room2 : MonoBehaviour
             }
         }
 
+    }
+
+    void BookPass()
+    {
+        string[] bookColors = new string[] { "r", "g", "b" };
+        int bookRedCount = 0;
+        int bookGreenCount = 0;
+        int bookBlueCount = 0;
+
+        for (int i = 0; i < 8; i++)
+        {
+            int color = Random.Range(0, bookColors.Length);
+            SpriteRenderer bookSpriteRenderer = booksPos.transform.GetChild(i).GetComponent<SpriteRenderer>();
+            if (bookColors[color] == "r")
+            {
+                if (i == 7)
+                {
+                    bookSpriteRenderer.sprite = bookRed3;
+                }
+                else if (i == 6 || i == 5)
+                {
+                    bookSpriteRenderer.sprite = bookRed2;
+                }
+                else
+                {
+                    bookSpriteRenderer.sprite = bookRed1;
+                }
+
+                bookRedCount += 1;
+            }
+            else if (bookColors[color] == "g")
+            {
+                if (i == 7)
+                {
+                    bookSpriteRenderer.sprite = bookGreen3;
+                }
+                else if (i == 6 || i == 5)
+                {
+                    bookSpriteRenderer.sprite = bookGreen2;
+                }
+                else
+                {
+                    bookSpriteRenderer.sprite = bookGreen1;
+                }
+
+                bookGreenCount += 1;
+            }
+            else if (bookColors[color] == "b")
+            {
+                if (i == 7)
+                {
+                    bookSpriteRenderer.sprite = bookBlue3;
+                }
+                else if (i == 6 || i == 5)
+                {
+                    bookSpriteRenderer.sprite = bookBlue2;
+                }
+                else
+                {
+                    bookSpriteRenderer.sprite = bookBlue1;
+                }
+
+                bookBlueCount += 1;
+            }
+        }
+
+        print(bookRedCount);
+        print(bookGreenCount);
+        print(bookBlueCount);
+
+        correctPw = bookRedCount.ToString();
+    }
+
+    void PlantPass()
+    {
+        int plants = Random.Range(1, 6);
+
+        if (plants == 1)
+        {
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(1.58f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+        }
+        else if (plants == 2)
+        {
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(0.5f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(2.7f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+        }
+        else if (plants == 3)
+        {
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(-0.3f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(1.58f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(3.46f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+        }
+        else if (plants == 4)
+        {
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(-0.3f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(1f, 2.3f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(2.3f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(3.46f, 2.3f, 0), Quaternion.identity, plantsPos.transform);
+        }
+        else if (plants == 5)
+        {
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(-0.3f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(1.58f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(3.46f, 1.7f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(0.65f, 2.3f, 0), Quaternion.identity, plantsPos.transform);
+            Instantiate(testPlant, plantsPos.transform.TransformPoint(2.55f, 2.3f, 0), Quaternion.identity, plantsPos.transform);
+        }
+
+        correctPw += plants;
+    }
+
+    void PaintingPass()
+    {
+        int planetsCount = 0;
+
+        for (int i = 0; i < 9; i++)
+        {
+            GameObject planetObj = planetsPos.transform.GetChild(i).gameObject;
+
+            if (Random.value > 0.5f)
+            {
+                float xPos = planetObj.transform.localPosition.x;
+                float yPos = planetObj.transform.localPosition.y;
+                planetObj.transform.localPosition = new Vector3(Random.Range(xPos - 0.5f, xPos + 0.5f), Random.Range(yPos - 0.2f, yPos + 0.2f), Random.Range(0, 180));
+                planetsCount += 1;
+            }
+            else
+            {
+                Destroy(planetObj);
+            }
+        }
+
+        correctPw += planetsCount;
     }
 
     private void LateUpdate()
@@ -430,16 +587,8 @@ public class Room2 : MonoBehaviour
             if (activeItem != null && activeItem.name.Contains("Hammer"))
             {
                 // instantiate clue note
-                GameObject clueNoteItem = new GameObject();
+                GameObject clueNoteItem = Instantiate(clueNotePrefab, currentView.transform.TransformPoint(interacted.transform.localPosition), Quaternion.identity, currentView.transform);
                 clueNoteItem.name = "ClueNote";
-                clueNoteItem.tag = "Interactive";
-                clueNoteItem.transform.SetParent(currentView.transform);
-                clueNoteItem.transform.localPosition = interacted.transform.localPosition;
-                clueNoteItem.transform.localScale = new Vector3(0.1f, 0.1f);
-                SpriteRenderer keyRenderer = clueNoteItem.AddComponent<SpriteRenderer>();
-                keyRenderer.sprite = clueNoteSprite;
-                keyRenderer.sortingOrder = 2;
-                clueNoteItem.AddComponent<BoxCollider2D>();
 
                 DestroyHint("Piggy Hint");
 
@@ -482,7 +631,11 @@ public class Room2 : MonoBehaviour
                 if (paintingLight.sprite == paintingLightWhiteSprite)
                 {
                     paintingLight.sprite = paintingLightPurpleSprite;
-                    painting.sprite = paintingPurpleSprite;
+                    foreach (Transform p in planetsPos.transform)
+                    {
+                        p.gameObject.SetActive(true);
+                    }
+                    //painting.sprite = paintingPurpleSprite;
 
                     invBulb.sprite = itemBulbWhiteSprite;
                     activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbWhiteSprite;
@@ -490,7 +643,11 @@ public class Room2 : MonoBehaviour
                 else if (paintingLight.sprite == paintingLightPurpleSprite)
                 {
                     paintingLight.sprite = paintingLightWhiteSprite;
-                    painting.sprite = paintingWhiteSprite;
+                    foreach (Transform p in planetsPos.transform)
+                    {
+                        p.gameObject.SetActive(false);
+                    }
+                    //painting.sprite = paintingWhiteSprite;
 
                     invBulb.sprite = itemBulbPurpleSprite;
                     activeItem.GetComponent<SpriteRenderer>().sprite = itemBulbPurpleSprite;
@@ -553,7 +710,7 @@ public class Room2 : MonoBehaviour
 
             if (pwCount == 3)
             {
-                if (int.Parse(padlockPw.text) == correctPw)
+                if (int.Parse(padlockPw.text) == int.Parse(correctPw))
                 {
                     Debug.Log("success!");
                     //canEscape = true;
@@ -587,16 +744,8 @@ public class Room2 : MonoBehaviour
         currentView.GetComponent<SpriteRenderer>().sprite = safeOpenSprite;
 
         // instantiate key
-        GameObject keyItem = new GameObject();
+        GameObject keyItem = Instantiate(keyPrefab, currentView.transform.TransformPoint(1.015f, 0, 0), Quaternion.identity, currentView.transform);
         keyItem.name = "Key";
-        keyItem.tag = "Item";
-        keyItem.transform.SetParent(currentView.transform);
-        keyItem.transform.localPosition = new Vector3(1.015f, 0, 0);
-        keyItem.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
-        SpriteRenderer keyRenderer = keyItem.AddComponent<SpriteRenderer>();
-        keyRenderer.sprite = keySprite;
-        keyRenderer.sortingOrder = 3;
-        keyItem.AddComponent<BoxCollider2D>();
 
         currentView.transform.localPosition = new Vector3(currentView.transform.localPosition.x - 1.015f, currentView.transform.localPosition.y, currentView.transform.localPosition.z);
     }
